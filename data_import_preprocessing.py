@@ -35,7 +35,7 @@ class import_data_preprocessing:
 
     def __init__(self,
                  train_data_file_name = 'HT_Cas9_train',
-                 test_data_file_name = 'HT_Cas9_test',
+                 test_data_file_name = None,
                  cut_off_read_count = None,
                  split_train_val = 0.2,
                  RD_seed = 1234
@@ -49,8 +49,9 @@ class import_data_preprocessing:
         # CSV file columns check
         self.train_data_file_sample = pd.read_csv(train_data_file_name, nrows=1)
         self.train_data_file_sample_column = list(self.train_data_file_sample.columns)
-        self.test_data_file_sample = pd.read_csv(test_data_file_name, nrows=1)
-        self.test_data_file_sample_column = list(self.test_data_file_sample.columns)
+        if test_data_file_name is not None:
+            self.test_data_file_sample = pd.read_csv(test_data_file_name, nrows=1)
+            self.test_data_file_sample_column = list(self.test_data_file_sample.columns)
 
 
 
@@ -376,7 +377,7 @@ class import_data_preprocessing:
         if split_data < 0.01:
             result_dict = {'train' : None, 'val' : None, 'total' : dict_data}
         else:
-            train_data, test_data = self.split_data(dictionary_data=dic_data, test_size=split_data)
+            train_data, test_data = self.split_data(dictionary_data=dict_data, test_size=split_data)
             result_dict = {'train' : train_data, 'val' : test_data, 'total' : dict_data}
             
         return result_dict
