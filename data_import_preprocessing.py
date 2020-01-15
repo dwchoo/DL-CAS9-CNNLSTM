@@ -353,7 +353,7 @@ class import_data_preprocessing:
         return train_data, test_data
     
     
-    def main(self, sgRNA_column, indel_column, targetDNA_column=None,
+    def __call__(self, sgRNA_column, indel_column, targetDNA_column=None,
                  offtarget=False, split_data = 0.0,
                  sgRNA_have_NGG=True, delete_NGG = False,
                  PAM_length=3, mismatch_calc=False):
