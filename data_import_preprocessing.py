@@ -49,10 +49,11 @@ class import_data_preprocessing:
         # CSV file columns check
         self.train_data_file_sample = pd.read_csv(train_data_file_name, nrows=1)
         self.train_data_file_sample_column = list(self.train_data_file_sample.columns)
+        self.test_data_file_sample = None
+        self.test_data_file_sample_column = None
         if test_data_file_name is not None:
             self.test_data_file_sample = pd.read_csv(test_data_file_name, nrows=1)
             self.test_data_file_sample_column = list(self.test_data_file_sample.columns)
-
 
 
     def Read_csv_file(self, file_path,
@@ -214,12 +215,12 @@ class import_data_preprocessing:
         return one_hot_indel_class
 
 
-    def train_data_preprocessing_ontarget(self, sgRNA_column, indel_column,
+    def data_preprocessing_ontarget(self, _file_path, sgRNA_column, indel_column,
                                           sgRNA_have_NGG = True, delete_NGG = False,
                                           PAM_length = 3):
 
         # {'sgRNA' : sgRNA, 'targetDNA' : targetDNA, 'indel' : indel}
-        raw_data = self.Read_csv_file(file_path=self.train_data_file_name,
+        raw_data = self.Read_csv_file(file_path=_file_path,
                                      sgRNA_column=sgRNA_column, targetDNA_column=None,
                                      indel_column=indel_column
                                      )
@@ -261,14 +262,14 @@ class import_data_preprocessing:
 
 
 
-    def train_data_preprocessing_offtarget(self,sgRNA_column, targetDNA_column, indel_column,
+    def data_preprocessing_offtarget(self,_file_path, sgRNA_column, targetDNA_column, indel_column,
                                           sgRNA_have_NGG = True, delete_NGG = False,
                                           PAM_length = 3,
                                           mismatch_calc=False
                                           ):
 
         # {'sgRNA' : sgRNA, 'targetDNA' : targetDNA, 'indel' : indel}
-        raw_data = self.Read_csv_file(file_path=self.train_data_file_name,
+        raw_data = self.Read_csv_file(file_path=_file_path,
                                      sgRNA_column=sgRNA_column, targetDNA_column=targetDNA_column,
                                      indel_column=indel_column
                                      )
@@ -361,24 +362,45 @@ class import_data_preprocessing:
         
         # read csv file & preprocessing
         if offtarget is False:
-            dict_data = self.train_data_preprocessing_ontarget(sgRNA_column=sgRNA_column,
-                                                               indel_column = indel_column,
-                                                               sgRNA_have_NGG=sgRNA_have_NGG, delete_NGG=delete_NGG,
-                                                               PAM_length=PAM_length)
+            dict_data = self.data_preprocessing_ontarget(_file_path=self.train_data_file_name,
+                                                         sgRNA_column=sgRNA_column,
+                                                         indel_column = indel_column,
+                                                         sgRNA_have_NGG=sgRNA_have_NGG, 
+                                                         delete_NGG=delete_NGG,
+                                                         PAM_length=PAM_length)
+            if self.test_data_file_name is not None:
+                test_dict_data = self.data_preprocessing_ontarget(_file_path=self.test_data_file_name,
+                                                                  sgRNA_column=sgRNA_column, 
+                                                                  indel_column = indel_column,
+                                                                  sgRNA_have_NGG=sgRNA_have_NGG, 
+                                                                  delete_NGG=delete_NGG,
+                                                                  PAM_length=PAM_length)
             
         else:
-            dict_data = self.train_data_preprocessing_offtarget(sgRNA_column=sgRNA_column, targetDNA_column=targetDNA_column,
-                                                                indel_column=indel_column,
-                                                                sgRNA_have_NGG=sgRNA_have_NGG, delete_NGG=delete_NGG,
-                                                                PAM_length=PAM_length,
-                                                                mismatch_calc=mismatch_calc)
+            dict_data = self.data_preprocessing_offtarget(_file_path=self.train_data_file_name,
+                                                          gRNA_column=sgRNA_column, 
+                                                          argetDNA_column=targetDNA_column,
+                                                          indel_column=indel_column,
+                                                          sgRNA_have_NGG=sgRNA_have_NGG, 
+                                                          delete_NGG=delete_NGG,
+                                                          PAM_length=PAM_length,
+                                                          mismatch_calc=mismatch_calc)
+            if self.test_data_file_name is not None:
+                test_dict_data = self.data_preprocessing_offtarget(_file_path=self.test_data_file_name,
+                                                                   gRNA_column=sgRNA_column,
+                                                                   indel_column = indel_column,
+                                                                   sgRNA_have_NGG=sgRNA_have_NGG, 
+                                                                   delete_NGG=delete_NGG,
+                                                                   PAM_length=PAM_length)
+        
+            
         
         # split data
         if split_data < 0.01:
-            result_dict = {'train' : None, 'val' : None, 'total' : dict_data}
+            result_dict = {'train' : dict_data, 'val' : None, 'total' : dict_data, 'test' : test_dict_data}
         else:
             train_data, test_data = self.split_data(dictionary_data=dict_data, test_size=split_data)
-            result_dict = {'train' : train_data, 'val' : test_data, 'total' : dict_data}
+            result_dict = {'train' : train_data, 'val' : test_data, 'total' : dict_data, 'test' : test_dict_data}
             
         return result_dict
     
