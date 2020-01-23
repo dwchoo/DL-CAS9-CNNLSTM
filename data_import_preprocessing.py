@@ -11,24 +11,24 @@ class import_data_preprocessing:
 
 
     seq_one_hot_encoder = {
-        'A': np.array([1, 0, 0, 0]),
-        'C': np.array([0, 1, 0, 0]),
-        'G': np.array([0, 0, 1, 0]),
-        'T': np.array([0, 0, 0, 1]),
-        'N': np.array([0, 0, 0, 0])
+        'A': np.array([1, 0, 0, 0], dtype= np.int),
+        'C': np.array([0, 1, 0, 0], dtype= np.int),
+        'G': np.array([0, 0, 1, 0], dtype= np.int),
+        'T': np.array([0, 0, 0, 1], dtype= np.int),
+        'N': np.array([0, 0, 0, 0], dtype= np.int)
     }
 
     mismatch_one_hot_encoder = {}
     for i in range(num_mismatch_max):
         initial_list = [0] * num_mismatch_max
-        initial_list[i] = 1
+        initial_list[i] = int(1)
         mismatch_one_hot_encoder[i] = initial_list
 
     indel_class_one_hot_encoder = {}
     for i in range(num_indel_class):
         rate = i /10
         initial_list = [0] * num_indel_class
-        initial_list[i] = 1
+        initial_list[i] = int(1)
         indel_class_one_hot_encoder[rate] = initial_list
 
 
@@ -157,7 +157,7 @@ class import_data_preprocessing:
     
     
     def mismatch_position_N_number(self, encoded_sgRNA, encoded_targetDNA):
-        xor_seq = np.bitwise_xor(sgRNA, targetDNA)
+        xor_seq = np.bitwise_xor(encoded_sgRNA, encoded_targetDNA)
         mismatch_position = list(map(lambda x: sum(x)//2 , xor_seq))
         mismatch_number = sum(mismatch_position)
         
