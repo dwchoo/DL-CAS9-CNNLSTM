@@ -50,20 +50,16 @@ class CNNLSTM_model:
         self._regression_model = Model(self.input_data, self.MTL_regression_layer)
         self._clustering_model = Model(self.input_data, self.LSTM_middle_final)
 
-    def MTL_model(self):
-        
+    def MTL_model(self,):
         return self._MTL_model
 
-    def classification_model(self):
-        
+    def classification_model(self,):
         return self.classification_model
 
     def regression_model(self):
-        
         return self._regression_model
 
     def clustering_model(self):
-        
         return self._clustering_model
 
     def CNNLSTM_layer(self, layer_input):
@@ -85,7 +81,7 @@ class CNNLSTM_model:
         CNN_4 = Conv1D(kernal_size, [4], activation='relu', padding='same', kernel_initializer='he_normal')(input_data)
         CNN_4 = Dropout(dropout)(CNN_4)
 
-        CNN_5 = Conv1D(kernal_size, [4], activation='relu', padding='same', kernel_initializer='he_normal')(input_data)
+        CNN_5 = Conv1D(kernal_size, [5], activation='relu', padding='same', kernel_initializer='he_normal')(input_data)
         CNN_5 = Dropout(dropout)(CNN_5)
 
         CNN_concatenate = concatenate([CNN_1, CNN_2, CNN_3, CNN_4, CNN_5])
