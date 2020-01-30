@@ -9,6 +9,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import *
 from tensorflow.keras import Input, Model
+from tensorflow.keras.optimizers import Adam
 
 from tensorboard.plugins.hparams import api as hp
 
@@ -31,13 +32,14 @@ class mnist:
         self.HP_cnn1 = hp.HParam('cnn1',hp.IntInterval(10, 500))#hp_dict['cnn1']]))
         self.HP_cnn2 = hp.HParam('cnn2',hp.IntInterval(10, 500))#hp_dict['cnn2']]))
         self.HP_dropout = hp.HParam('dropout', hp.RealInterval(0.001, 0.6))
+        self.HP_lr = hp.HParam('learning_rate',hp.RealInterval(0.000001, 1.0))
         #self.HP_cnn1 = hp.HParam('cnn1',hp. hp_dict['cnn1'])
         #self.HP_cnn2 = hp.HParam('cnn2',hp_dict['cnn2'])
         #self.HP_dropout = hp.HParam('dropout', hp_dict['dropout'])
         
         with tf.summary.create_file_writer(self.log_dir + '/hp_tunning').as_default():
             hp.hparams_config(
-                hparams=[self.HP_cnn1, self.HP_cnn2, self.HP_dropout],
+                hparams=[self.HP_cnn1, self.HP_cnn2, self.HP_dropout, self.HP_lr],
                 metrics=[hp.Metric('accuracy', display_name='Accuracy')],
             )
         
@@ -46,6 +48,7 @@ class mnist:
         self.cnn1 = hp_dict['cnn1']#self.HP_cnn1.domain.values[0]
         self.cnn2 = hp_dict['cnn2']#self.HP_cnn2.domain.values[0]
         self.dropout = hp_dict['dropout']
+        self.lr = hp_dict['learning_rate']
 
         
 
@@ -92,8 +95,9 @@ class mnist:
     def training(self, callback_list=[]):
 
         call_list = self.TB_callbacks() + callback_list
+        optimzer = Adam(learning_rate = self.lr)
 
-        self.CNN_model.compile(optimizer='adam',
+        self.CNN_model.compile(optimizer=optimzer,
                                 loss = 'sparse_categorical_crossentropy',
                                 metrics=['accuracy'])
         self.CNN_model.fit(self.train_img,self.y_train, epochs=5,
@@ -111,15 +115,16 @@ class mnist:
 
     
     def evaluate(self):
-        loss, acc = self.CNN_model.evaluate(self.test_img, self.y_test, verbose=2)
+        self.loss, self.acc = self.CNN_model.evaluate(self.test_img, self.y_test, verbose=2)
         hparams = {
             'cnn1' : self.cnn1,
             'cnn2' : self.cnn2,
             'dropout' : self.dropout,
+            'learning_rate' : self.lr,
         }
         with tf.summary.create_file_writer(self.log_dir+'/hp_tunning').as_default():
             hp.hparams(hparams)
-            accuracy = acc
+            accuracy = self.acc
             tf.summary.scalar('accuracy', accuracy, step=1)
         pass
 
