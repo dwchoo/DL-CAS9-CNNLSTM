@@ -16,6 +16,17 @@ from tensorboard.plugins.hparams import api as hp
 #from keras.layers import *
 
 
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    gpu_num = 1
+    try:
+        tf.config.experimental.set_visible_devices(gpus[gpu_num], 'GPU')
+        tf.config.experimental.set_memory_growth(gpus[gpu_num], True)
+    except RuntimeError as e:
+        print(e)
+
+
 class mnist:
     def __init__(self, hp_dict):
         self.data_set()
@@ -32,7 +43,7 @@ class mnist:
         self.HP_cnn1 = hp.HParam('cnn1',hp.IntInterval(10, 500))#hp_dict['cnn1']]))
         self.HP_cnn2 = hp.HParam('cnn2',hp.IntInterval(10, 500))#hp_dict['cnn2']]))
         self.HP_dropout = hp.HParam('dropout', hp.RealInterval(0.001, 0.6))
-        self.HP_lr = hp.HParam('learning_rate',hp.RealInterval(0.000001, 1.0))
+        self.HP_lr = hp.HParam('learning_rate',hp.RealInterval(1e-6, 1.0))
         #self.HP_cnn1 = hp.HParam('cnn1',hp. hp_dict['cnn1'])
         #self.HP_cnn2 = hp.HParam('cnn2',hp_dict['cnn2'])
         #self.HP_dropout = hp.HParam('dropout', hp_dict['dropout'])
@@ -100,7 +111,7 @@ class mnist:
         self.CNN_model.compile(optimizer=optimzer,
                                 loss = 'sparse_categorical_crossentropy',
                                 metrics=['accuracy'])
-        self.CNN_model.fit(self.train_img,self.y_train, epochs=5,
+        self.CNN_model.fit(self.train_img,self.y_train, epochs=2,
                             callbacks = call_list)
         pass
 
@@ -123,7 +134,7 @@ class mnist:
             'learning_rate' : self.lr,
         }
         with tf.summary.create_file_writer(self.log_dir+'/hp_tunning').as_default():
-            hp.hparams(hparams)
+            hp.hparams(hparams= hparams)
             accuracy = self.acc
             tf.summary.scalar('accuracy', accuracy, step=1)
         pass
