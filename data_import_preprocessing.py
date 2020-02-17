@@ -129,6 +129,10 @@ class import_data_preprocessing:
         PAM_length = PAM_length
         sgRNA = sgRNA.upper()
         targetDNA = targetDNA.upper()
+        
+        # 23보다 긴 것은 잘라준다...
+        if len(targetDNA) > 23:
+            targetDNA = targetDNA[:-1]
 
         # Preprocessing NGG
         if sgRNA_have_NGG and delete_NGG:
@@ -143,6 +147,8 @@ class import_data_preprocessing:
             elif not 'N' in sgRNA and 'N' in targetDNA:
                 N_position = sgRNA.find('N')
                 targetDNA[N_position] = sgRNA[N_position]
+        elif sgRNA_have_NGG is False:
+            sgRNA = sgRNA + 'N' * PAM_length
 
         #Unify length
         sgRNA_length = len(sgRNA)
@@ -216,7 +222,7 @@ class import_data_preprocessing:
 
 
     def data_preprocessing_ontarget(self, _file_path, sgRNA_column, indel_column,
-                                          sgRNA_have_NGG = True, delete_NGG = False,
+                                          sgRNA_have_NGG = False, delete_NGG = False,
                                           PAM_length = 3):
 
         # {'sgRNA' : sgRNA, 'targetDNA' : targetDNA, 'indel' : indel}
@@ -275,19 +281,31 @@ class import_data_preprocessing:
                                      )
 
         # Unify length
+        Unified_data = list(map( lambda sgRNA, targetDNA: self.Unify_length_processNGG(sgRNA= sgRNA,
+                                                        targetDNA= targetDNA,
+                                                        sgRNA_have_NGG=sgRNA_have_NGG,
+                                                        delete_NGG=delete_NGG,
+                                                        PAM_length=PAM_length
+                                                        ),
+                                                        raw_data['sgRNA'],raw_data['targetDNA']
+                                                        ))
+        sgRNA = np.array(list(map(lambda x: x[0], Unified_data)))
+        targetDNA = np.array(list(map(lambda x: x[1], Unified_data)))
+        '''
         sgRNA, targetDNA = self.Unify_length_processNGG(sgRNA= raw_data['sgRNA'],
                                                         targetDNA= raw_data['targetDNA'],
                                                         sgRNA_have_NGG=sgRNA_have_NGG,
                                                         delete_NGG=delete_NGG,
                                                         PAM_length=PAM_length
                                                         )
+        '''
 
         # One-hote encoding
-        encoded_sgRNA = np.array(list(map(self.seq_one_hot_encoding,raw_data['sgRNA'])))
-        encoded_targetDNA = np.array(list(map(self.seq_one_hot_encoding,raw_data['targetDNA'])))
+        encoded_sgRNA = np.array(list(map(self.seq_one_hot_encoding,sgRNA)))
+        encoded_targetDNA = np.array(list(map(self.seq_one_hot_encoding,targetDNA)))
 
         # stack operation, make 2D
-        stack_operation = np.stack((encoded_sgRNA, encoded_targetDNA), axis=-1)
+        stack_operation = np.stack((encoded_sgRNA, encoded_targetDNA), axis=-1)#3
 
         # mismatch and indel one-hot encoding
         #num_mismatch = np.array(list(map(self.mismatch_one_hot_encoding, raw_data[''])))
@@ -297,8 +315,8 @@ class import_data_preprocessing:
         # Calculate mismatch position and number
         if mismatch_calc:
             mismatch = list(map(self.mismatch_position_N_number, encoded_sgRNA, encoded_targetDNA))
-            mismatch_position = list(map(lambda x: x[0], mismatch))
-            mismatch_number = list(map(lambda x: x[1], mismatch))
+            mismatch_position = np.array(list(map(lambda x: x[0], mismatch)))
+            mismatch_number = np.array(list(map(lambda x: x[1], mismatch)))
         else:
             mismatch_position = None
             mismatch_number = None
@@ -357,7 +375,7 @@ class import_data_preprocessing:
     
     def __call__(self, sgRNA_column, indel_column, targetDNA_column=None,
                  offtarget=False, split_data = 0.0,
-                 sgRNA_have_NGG=True, delete_NGG = False,
+                 sgRNA_have_NGG=False, delete_NGG = False,
                  PAM_length=3, mismatch_calc=False):
         
         # read csv file & preprocessing
@@ -375,11 +393,13 @@ class import_data_preprocessing:
                                                                   sgRNA_have_NGG=sgRNA_have_NGG, 
                                                                   delete_NGG=delete_NGG,
                                                                   PAM_length=PAM_length)
+            else:
+                test_dict_data = None
             
         else:
             dict_data = self.data_preprocessing_offtarget(_file_path=self.train_data_file_name,
-                                                          gRNA_column=sgRNA_column, 
-                                                          argetDNA_column=targetDNA_column,
+                                                          sgRNA_column=sgRNA_column, 
+                                                          targetDNA_column=targetDNA_column,
                                                           indel_column=indel_column,
                                                           sgRNA_have_NGG=sgRNA_have_NGG, 
                                                           delete_NGG=delete_NGG,
@@ -387,11 +407,15 @@ class import_data_preprocessing:
                                                           mismatch_calc=mismatch_calc)
             if self.test_data_file_name is not None:
                 test_dict_data = self.data_preprocessing_offtarget(_file_path=self.test_data_file_name,
-                                                                   gRNA_column=sgRNA_column,
+                                                                   sgRNA_column=sgRNA_column,
+                                                                   targetDNA_column=targetDNA_column,
                                                                    indel_column = indel_column,
                                                                    sgRNA_have_NGG=sgRNA_have_NGG, 
                                                                    delete_NGG=delete_NGG,
-                                                                   PAM_length=PAM_length)
+                                                                   PAM_length=PAM_length,
+                                                                   mismatch_calc=mismatch_calc)
+            else:
+                test_dict_data = None
         
             
         

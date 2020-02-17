@@ -5,7 +5,7 @@ from skopt.space import Real, Categorical, Integer
 from skopt.plots import plot_convergence, plot_objective, plot_evaluations
 from skopt.utils import use_named_args
 
-from mnist import mnist
+#from mnist import mnist
 
 hp_dict = {
     'cnn1' : 50,
@@ -17,6 +17,7 @@ hp_dict = {
 default_HP = list(hp_dict.values())
 
 def mnist_model_tunning(hp_list):
+    from mnist import mnist
     HP_list2dict = {
     'cnn1' : int(hp_list[0]),
     'cnn2' : int(hp_list[1]),
