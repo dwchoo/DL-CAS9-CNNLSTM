@@ -4,6 +4,7 @@ import tensorflow as tf
 
 from tensorflow.keras.layers import Conv1D, Conv2D,Dropout, concatenate, LSTM, Dense, Lambda, Reshape
 from tensorflow.keras import Input, Model
+from tensorflow.keras.optimizers import Adam
 
 '''
 %matplotlib inline
@@ -12,27 +13,81 @@ from tensorflow.keras import Input, Model
 %config InlineBackend.figure_format ='retina'
 '''
 
+default_HP = {
+    'CNN_1_kernal' : 16,
+    'CNN_1_RNN' : 64,
+    'CNN_2_kernal' : 32,
+    'CNN_2_RNN' : 128,
+    'CNN_3_kernal' : 64,
+    'CNN_3_RNN' : 256,
+    'CNN_4_kernal' : 128,
+    'CNN_4_RNN' : 256,
+    'CNN_5_kernal' : 128,
+    'CNN_5_RNN' : 256,
+
+    'DNN_1' : 100,
+    'DNN_2' : 100,
+    'DNN_rate' : 100,
+
+    'CNN_dropout' : 0.5,
+    'DNN_dropout' : 0.5,
+
+    'learning_rate' : 0.0001
+}
+
 
 class CNNLSTM_model:
-    def __init__(self,
-    input_shape):
+    def __init__(self, input_shape, HP = default_HP):
         ## TODO: Hyperparameter 넣는 방법 추가
         self.input_data = Input(shape=input_shape)
+
+        self.CNN_1_kernal = HP['CNN_1_kernal']
+        self.CNN_1_RNN    = HP['CNN_1_RNN']
+        self.CNN_2_kernal = HP['CNN_2_kernal']
+        self.CNN_2_RNN    = HP['CNN_2_RNN']
+        self.CNN_3_kernal = HP['CNN_3_kernal']
+        self.CNN_3_RNN    = HP['CNN_3_RNN']
+        self.CNN_4_kernal = HP['CNN_4_kernal']
+        self.CNN_4_RNN    = HP['CNN_4_RNN']
+        self.CNN_5_kernal = HP['CNN_5_kernal']
+        self.CNN_5_RNN    = HP['CNN_5_RNN']
+        self.DNN_1        = HP['DNN_1']
+        self.DNN_2        = HP['DNN_2']
+        self.DNN_rate     = HP['DNN_rate']
+        self.CNN_dropout  = HP['CNN_dropout' ]
+        self.DNN_dropout  = HP['DNN_dropout' ]
+        self.learning_rate  =  HP['learning_rate']
+
         
         #model define
-        CNNLSTM_layer_1 = self.CNNLSTM_layer(self.input_data)
+        CNNLSTM_layer_1 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_1_kernal,
+                                            RNN_cell_size=self.CNN_1_RNN,
+                                            dropout=self.CNN_dropout)
         concatenate_1 = concatenate([self.input_data, CNNLSTM_layer_1])
 
-        CNNLSTM_layer_2 = self.CNNLSTM_layer(concatenate_1)
+        CNNLSTM_layer_2 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_2_kernal,
+                                            RNN_cell_size=self.CNN_2_RNN,
+                                            dropout=self.CNN_dropout)
         concatenate_2 = concatenate([CNNLSTM_layer_1, CNNLSTM_layer_2])
 
-        CNNLSTM_layer_3 = self.CNNLSTM_layer(concatenate_2)
+        CNNLSTM_layer_3 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_3_kernal,
+                                            RNN_cell_size=self.CNN_3_RNN,
+                                            dropout=self.CNN_dropout)
         concatenate_3  = concatenate([CNNLSTM_layer_2, CNNLSTM_layer_3])
 
-        CNNLSTM_layer_4 = self.CNNLSTM_layer(concatenate_3)
+        CNNLSTM_layer_4 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_4_kernal,
+                                            RNN_cell_size=self.CNN_4_RNN,
+                                            dropout=self.CNN_dropout)
         concatenate_4 = concatenate([CNNLSTM_layer_3, CNNLSTM_layer_4])
         
-        CNNLSTM_layer_5 = self.CNNLSTM_layer(concatenate_4)
+        CNNLSTM_layer_5 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_5_kernal,
+                                            RNN_cell_size=self.CNN_5_RNN,
+                                            dropout=self.CNN_dropout)
         concatenate_5 = concatenate([CNNLSTM_layer_4, CNNLSTM_layer_5])
 
         LSTM_middle_1 = self.select_last_LSTM_cell(concatenate_3)
@@ -46,15 +101,39 @@ class CNNLSTM_model:
 
         self._MTL_model = Model(self.input_data, [self.classification_layer_1, self.classification_layer_2,
                                         self.MTL_classification_layer, self.MTL_regression_layer])
-        self.classification_model = Model(self.input_data, self.MTL_classification_layer)
+        self._classification_model = Model(self.input_data, self.MTL_classification_layer)
         self._regression_model = Model(self.input_data, self.MTL_regression_layer)
         self._clustering_model = Model(self.input_data, self.LSTM_middle_final)
+
+
+        # compile
+        optimizer = Adam(learning_rate = self.learning_rate)
+        self._MTL_model.compile(optimizer=optimizer,
+                                loss={
+                                    #'num_mis': 'categorical_crossentropy',
+                                    'class_1': 'categorical_crossentropy',
+                                    'class_2': 'categorical_crossentropy',
+                                    'class_final': 'categorical_crossentropy',
+                                    'rate': 'mean_squared_error'},
+                                loss_weights={
+                                    #'num_mis': 0.5,
+                                    'class_1': 1,
+                                    'class_2': 1,
+                                    'class_final': 0.5,
+                                    'rate': 1},
+                                metrics={
+                                    #'num_mis': 'accuracy',
+                                    'class_1': "accuracy",
+                                    'class_2': "accuracy",
+                                    'class_final': "accuracy"}
+                                )
+
 
     def MTL_model(self,):
         return self._MTL_model
 
     def classification_model(self,):
-        return self.classification_model
+        return self._classification_model
 
     def regression_model(self):
         return self._regression_model
@@ -62,10 +141,10 @@ class CNNLSTM_model:
     def clustering_model(self):
         return self._clustering_model
 
-    def CNNLSTM_layer(self, layer_input):
-        kernal_size = 128
-        RNN_cell_size = 256
-        dropout = 0.5
+    def CNNLSTM_layer(self, layer_input, kernal_size = 128, RNN_cell_size = 256, dropout = 0.5):
+        kernal_size = kernal_size
+        RNN_cell_size = RNN_cell_size
+        dropout = dropout
 
         input_data = layer_input
 
@@ -96,10 +175,10 @@ class CNNLSTM_model:
         return last_LSTM
 
     def classification_layer(self, layer_input, layer_name='1'):
-        DNN_1_cell = 100
-        DNN_2_cell = 100
+        DNN_1_cell = self.DNN_1
+        DNN_2_cell = self.DNN_2
         DNN_final_cell = 11
-        dropout = 0.5
+        dropout = self.DNN_dropout
 
         input_data = layer_input
 
@@ -116,14 +195,14 @@ class CNNLSTM_model:
         return DNN_class_layer_3
 
     def MTL_layer(self, layer_input, layer_name='3'):
-        DNN_class_1_cell = 100
-        DNN_class_2_cell = 100
+        DNN_class_1_cell = self.DNN_1
+        DNN_class_2_cell = self.DNN_2
         DNN_class_final_cell = 11
 
-        DNN_rate_1_cell = 100
+        DNN_rate_1_cell = self.DNN_rate
         DNN_rate_final_cell = 1
 
-        dropout = 0.5
+        dropout = self.DNN_dropout
 
         input_data = layer_input
 
@@ -143,6 +222,10 @@ class CNNLSTM_model:
         DNN_rate_layer_2 = Dense(DNN_rate_final_cell, activation='linear', name='rate')(DNN_rate_layer_1)
 
         return DNN_class_layer_3, DNN_rate_layer_2
+
+
+
+
 
 
 
@@ -180,7 +263,7 @@ class CNNLSTM_offtarget_model:
 
         self._MTL_model = Model(self.input_data, [self.classification_layer_1, self.classification_layer_2,
                                         self.MTL_classification_layer, self.MTL_regression_layer])
-        self.classification_model = Model(self.input_data, self.MTL_classification_layer)
+        self._classification_model = Model(self.input_data, self.MTL_classification_layer)
         self._regression_model = Model(self.input_data, self.MTL_regression_layer)
         self._clustering_model = Model(self.input_data, self.LSTM_middle_final)
 
@@ -188,7 +271,7 @@ class CNNLSTM_offtarget_model:
         return self._MTL_model
 
     def classification_model(self,):
-        return self.classification_model
+        return self._classification_model
 
     def regression_model(self):
         return self._regression_model
