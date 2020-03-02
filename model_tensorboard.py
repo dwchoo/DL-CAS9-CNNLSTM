@@ -36,7 +36,7 @@ default_HP = {
 }
 
 
-class tmp_tensorboard:
+class SpCas9_tensorboard:
     def __init__(self, HP_dict, log_dir = 'tensorboard/'):
         time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         self.log_dir =  log_dir + time_stamp
@@ -83,8 +83,10 @@ class tmp_tensorboard:
         """
 
         self.Metric_name_loss = 'loss'
-        self.Metric_name_pearson = 'pearson_correlation'
-        self.Metric_name_spearman = 'spearman_correlation'
+        self.Metric_name_test_pearson = 'test_pearson_correlation'
+        self.Metric_name_test_spearman = 'test_spearman_correlation'
+        self.Metric_name_bench_pearson = 'bench_pearson_correlation'
+        self.Metric_name_bench_spearman = 'bench_spearman_correlation'
 
         with tf.summary.create_file_writer(self.log_dir + '/hp_tunning').as_default():
             hp.hparams_config(
@@ -97,8 +99,10 @@ class tmp_tensorboard:
                          self.CNN_dropout, self.DNN_dropout,
                          self.learning_rate],
                 metrics=[hp.Metric(self.Metric_name_loss, display_name='Loss'),
-                         hp.Metric(self.Metric_name_pearson, display_name='Pearson Correlation'),
-                         hp.Metric(self.Metric_name_spearman, display_name='Spearman Correlation')]
+                         hp.Metric(self.Metric_name_test_pearson, display_name='Pearson Correlation - Test data'),
+                         hp.Metric(self.Metric_name_test_spearman, display_name='Spearman Correlation - Test data'),
+                         hp.Metric(self.Metric_name_bench_pearson, display_name='Pearson Correlation - Bench data'),
+                         hp.Metric(self.Metric_name_bench_spearman, display_name='Spearman Correlation - Bench data')]
             )
 
         
@@ -110,9 +114,11 @@ class tmp_tensorboard:
         )
 
         self.data = self.model.SpCas9_data
+        self.bench_data = self.model.bench_data_endo
 
 
         # Callbacks
+        '''
         graph_data = {'input' : self.data['test']['seq'], 'True' : self.data['test']['indel_rate']}
         self.callbacks = HP_tunning_tensorboard_callback(
             log_dir=self.log_dir,
@@ -121,12 +127,40 @@ class tmp_tensorboard:
             plot=plot_scatter,
             plot_name='scatter'
         )
+        '''
+
+        test_input = self.data['test']['seq']
+        test_indel_true = self.data['test']['indel_rate']
+        bench_input = self.bench_data['total']['seq']
+        bench_indel_true = self.bench_data['total']['indel_rate']
+        
+        self.callbacks = HP_tunning_tensorboard_callback(log_dir=self.log_dir)
+        
+        test_data_correlation_plot = self.callbacks.callback_log_plot(
+            model = self.model.CNNLSTM_regression_model,
+            input_data = test_input,
+            true_data = test_indel_true,
+            plot = plot_scatter,
+            plot_name = 'Test data correlation'
+        )
+
+        bench_data_correlation_plot = self.callbacks.callback_log_plot(
+            model = self.model.CNNLSTM_regression_model,
+            input_data = bench_input,
+            true_data = bench_indel_true,
+            plot = plot_scatter,
+            plot_name = 'Endo data correlation'
+        )
+
+        callbacks_plot = [test_data_correlation_plot, bench_data_correlation_plot]
+        self.callbacks_list = self.callbacks.TB_callbacks(plot_callbacks = callbacks_plot)
+
 
 
 
     def training(self,):
         self.model.model_train(
-            callback= self.callbacks.TB_callbacks(),
+            callback= self.callbacks_list,
             verbose=1
         )
         
@@ -146,13 +180,15 @@ class tmp_tensorboard:
             loss= self.evaluate_val_loss,
             pearson= self.evaluate_test_pearson,
             spearman= self.evaluate_test_spearman,
+            bench_pearson= self.evaluate_bench_pearson,
+            bench_spearman= self.evaluate_bench_spearman,
             step=1
         )
         pass
 
 
     
-    def H_param(self, loss, pearson, spearman, step=1):
+    def H_param(self, loss, pearson, spearman, bench_pearson=None, bench_spearman=None,step=1):
         hparams = {
             'CNN_1_kernal'  : self.HP_dict['CNN_1_kernal'] ,
             'CNN_1_RNN'     : self.HP_dict['CNN_1_RNN']    ,
@@ -176,7 +212,10 @@ class tmp_tensorboard:
             hp.hparams(hparams=hparams)
             #print(loss, pearson, spearman)
             tf.summary.scalar(self.Metric_name_loss, loss, step=step)
-            tf.summary.scalar(self.Metric_name_pearson, pearson, step=step)
-            tf.summary.scalar(self.Metric_name_spearman, spearman, step=step)
+            tf.summary.scalar(self.Metric_name_test_pearson, pearson, step=step)
+            tf.summary.scalar(self.Metric_name_test_spearman, spearman, step=step)
+            if bench_pearson is not None:
+                tf.summary.scalar(self.Metric_name_bench_pearson, bench_pearson, step=step)
+                tf.summary.scalar(self.Metric_name_bench_spearman, bench_spearman, step=step)
 
     

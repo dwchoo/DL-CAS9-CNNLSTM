@@ -116,7 +116,7 @@ class CNNLSTM_SpCas9:
                                     #    'class_final' : class_weights_dict},
                                     #sample_weight={'rate' : sample_weight},
                                     shuffle=True,
-                                    epochs=200,
+                                    epochs=5,
                                     batch_size=64,
                                     verbose=verbose,
                                     callbacks=callbacks)
