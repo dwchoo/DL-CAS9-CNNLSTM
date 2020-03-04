@@ -32,126 +32,34 @@ default_HP = {
 }
 
 
-class tmp_tensorboard:
-    def __init__(self, HP_dict, log_dir = 'tensorboard/'):
-        time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        self.log_dir =  log_dir + time_stamp
-
-        # HP
-        self.CNN_1_kernal = hp.HParam('CNN_1_kernal',hp.IntInterval(1, 1024))
-        self.CNN_1_RNN    = hp.HParam('CNN_1_RNN',hp.IntInterval(1, 1024))
-        self.CNN_2_kernal = hp.HParam('CNN_2_kernal',hp.IntInterval(1, 1024))
-        self.CNN_2_RNN    = hp.HParam('CNN_2_RNN',hp.IntInterval(1, 1024))
-        self.CNN_3_kernal = hp.HParam('CNN_3_kernal',hp.IntInterval(1, 1024))
-        self.CNN_3_RNN    = hp.HParam('CNN_3_RNN',hp.IntInterval(1, 1024))
-        self.CNN_4_kernal = hp.HParam('CNN_4_kernal',hp.IntInterval(1, 1024))
-        self.CNN_4_RNN    = hp.HParam('CNN_4_RNN',hp.IntInterval(1, 1024))
-        self.CNN_5_kernal = hp.HParam('CNN_5_kernal',hp.IntInterval(1, 1024))
-        self.CNN_5_RNN    = hp.HParam('CNN_5_RNN',hp.IntInterval(1, 1024))
-        self.DNN_1        = hp.HParam('DNN_1',hp.IntInterval(1, 1024))
-        self.DNN_2        = hp.HParam('DNN_2',hp.IntInterval(1, 1024))
-        self.DNN_rate     = hp.HParam('DNN_rate',hp.IntInterval(1, 1024))
-        self.CNN_dropout  = hp.HParam('CNN_dropout', hp.RealInterval(0.001, 0.6))
-        self.DNN_dropout  = hp.HParam('DNN_dropout', hp.RealInterval(0.001, 0.6))
-        self.learning_rate  = hp.HParam('learning_rate', hp.RealInterval(1e-6, 1.0))
-
-
-        """
-        self.CNN_1_kernal = HP_dict['CNN_1_kernal']
-        self.CNN_1_RNN    = HP_dict['CNN_1_RNN']
-        self.CNN_2_kernal = HP_dict['CNN_2_kernal']
-        self.CNN_2_RNN    = HP_dict['CNN_2_RNN']
-        self.CNN_3_kernal = HP_dict['CNN_3_kernal']
-        self.CNN_3_RNN    = HP_dict['CNN_3_RNN']
-        self.CNN_4_kernal = HP_dict['CNN_4_kernal']
-        self.CNN_4_RNN    = HP_dict['CNN_4_RNN']
-        self.CNN_5_kernal = HP_dict['CNN_5_kernal']
-        self.CNN_5_RNN    = HP_dict['CNN_5_RNN']
-        self.DNN_1        = HP_dict['DNN_1']
-        self.DNN_2        = HP_dict['DNN_2']
-        self.DNN_rate     = HP_dict['DNN_rate']
-        self.CNN_dropout  = HP_dict['CNN_dropout' ]
-        self.DNN_dropout  = HP_dict['DNN_dropout' ]
-        self.learning_rate  =  HP_dict['learning_rate']
-        """
-
-
-        with tf.summary.create_file_writer(self.log_dir + '/hp_tunning').as_default():
-            hp.hparams_config(
-                hparams=[self.CNN_1_kernal, self.CNN_1_RNN,
-                         self.CNN_2_kernal, self.CNN_2_RNN,
-                         self.CNN_3_kernal, self.CNN_3_RNN,
-                         self.CNN_4_kernal, self.CNN_4_RNN,
-                         self.CNN_5_kernal, self.CNN_5_RNN,
-                         self.DNN_1, self.DNN_2, self.DNN_rate,
-                         self.CNN_dropout, self.DNN_dropout,
-                         self.learning_rate],
-                metrics=[hp.Metric('loss', display_name='Loss'),
-                         hp.Metric('pearson_correlation', display_name='Pearson Correlation'),
-                         hp.Metric('spearman_correlation', display_name='Spearman Correlation')]
-            )
-
-        
-        def H_param(self, loss, pearson, spearman, step=1):
-            hparams = {
-                'CNN_1_kernal'  : HP_dict['CNN_1_kernal'] ,
-                'CNN_1_RNN'     : HP_dict['CNN_1_RNN']    ,
-                'CNN_2_kernal'  : HP_dict['CNN_2_kernal'] ,    
-                'CNN_2_RNN'     : HP_dict['CNN_2_RNN']    ,
-                'CNN_3_kernal'  : HP_dict['CNN_3_kernal'] ,    
-                'CNN_3_RNN'     : HP_dict['CNN_3_RNN']    ,
-                'CNN_4_kernal'  : HP_dict['CNN_4_kernal'] ,    
-                'CNN_4_RNN'     : HP_dict['CNN_4_RNN']    ,
-                'CNN_5_kernal'  : HP_dict['CNN_5_kernal'] ,    
-                'CNN_5_RNN'     : HP_dict['CNN_5_RNN']    ,
-                'DNN_1'         : HP_dict['DNN_1']        ,
-                'DNN_2'         : HP_dict['DNN_2']        ,
-                'DNN_rate'      : HP_dict['DNN_rate']     ,
-                'CNN_dropout'   : HP_dict['CNN_dropout' ] ,    
-                'DNN_dropout'   : HP_dict['DNN_dropout' ] ,
-                'learning_rate' : HP_dict['learning_rate'],
-            }
-            with tf.summary.create_file_writer(self.log_dir + '/hp_tunning').as_default():
-                hp.hparams(hparams=hparams)
-                tf.summary.scalar('Loss', loss, step=step)
-                tf.summary.scalar('Pearson_correlation', pearson, step=step)
-                tf.summary.scalar('Spearman_correlation', spearman, step=step)
-
-        
-
-
-
 class HP_tunning_tensorboard_callback:
-    def __init__(self, log_dir, model,
-                data = {},#{'input' : None, 'True' : None},
-                plot = plot_scatter,
-                plot_name = 'scatter'):
-        
+    def __init__(self, log_dir):
         self.log_dir = log_dir
-        self.input_data = data['input']
-        self.true_data = data['True']
 
-        self.callbacks_log_plot = lambda _epoch, _logs : self.log_regression_plot(
+        # tensorboard plot image log dir
+        self.file_writer_plot = tf.summary.create_file_writer(self.log_dir + '/train')
+
+
+    def TB_callbacks(self, plot_callbacks=[]):
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=self.log_dir, histogram_freq=1)#, profile_batch=0)
+        
+        if type(plot_callbacks) is not list:
+            plot_callbacks = [plot_callbacks]
+        
+        callback_list = [tensorboard_callback] + plot_callbacks
+        return callback_list
+
+    def callback_log_plot(self, model, input_data, true_data, plot, plot_name='test scatter'):
+        _callbacks_log_plot = lambda _epoch, _logs : self.log_regression_plot(
                                                                             epoch= _epoch,
                                                                             logs= _logs,
                                                                             model= model,
-                                                                            input_data = self.input_data,
-                                                                            true_data = self.true_data,
+                                                                            input_data = input_data,
+                                                                            true_data = true_data,
                                                                             plot = plot,
                                                                             plot_name = plot_name,
                                                                         )
-
-
-
-    def TB_callbacks(self):
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=self.log_dir, histogram_freq=1)#, profile_batch=0)
-
-        self.file_writer_plot = tf.summary.create_file_writer(self.log_dir + '/train')
-
-        plot_callback = tf.keras.callbacks.LambdaCallback(on_epoch_end=self.callbacks_log_plot)
-        #pass
-        return [tensorboard_callback, plot_callback]
-
+        return tf.keras.callbacks.LambdaCallback(on_epoch_end=_callbacks_log_plot)
 
     def plot_to_image(self, figure):
         """Converts the matplotlib plot specified by 'figure' to a PNG image and
