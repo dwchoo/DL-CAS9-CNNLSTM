@@ -47,13 +47,16 @@ class CNNLSTM_SpCas9:
         # SpCas9 data
         SpCas9_data_preprocessing = import_data_preprocessing(train_data_file_name=self.train_data_name,
                                                                test_data_file_name=self.test_data_name,
+                                                               RD_seed=random_seed
                                                                )
         self.SpCas9_data = SpCas9_data_preprocessing(sgRNA_column='Target context sequence',
                                                         indel_column='Background subtracted indel',
                                                         split_data=0.1)
         
         # Benchmark data
-        Endo_data_preprocessing = import_data_preprocessing(train_data_file_name=self.benchmark_data)
+        Endo_data_preprocessing = import_data_preprocessing(train_data_file_name=self.benchmark_data,
+                                                            RD_seed=random_seed
+                                                            )
         self.bench_data_endo = Endo_data_preprocessing(sgRNA_column='30 bp target sequence (4 bp + 20 bp Protospacer + PAM + 3 bp)',
                                                         indel_column='Averge indel frequency (%)',
                                                         split_data=0

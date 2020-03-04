@@ -36,8 +36,8 @@ default_HP = {
 }
 
 
-class SpCas9_tensorboard:
-    def __init__(self, HP_dict, log_dir = 'tensorboard/'):
+class CNNLSTM_tensorboard:
+    def __init__(self, HP_dict, log_dir = 'tensorboard/', random_seed = 1234):
         time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         self.log_dir =  log_dir + time_stamp
 
@@ -83,10 +83,10 @@ class SpCas9_tensorboard:
         """
 
         self.Metric_name_loss = 'loss'
-        self.Metric_name_test_pearson = 'test_pearson_correlation'
-        self.Metric_name_test_spearman = 'test_spearman_correlation'
-        self.Metric_name_bench_pearson = 'bench_pearson_correlation'
-        self.Metric_name_bench_spearman = 'bench_spearman_correlation'
+        self.Metric_name_test_pearson = 'pearson_correlation_test'
+        self.Metric_name_test_spearman = 'spearman_correlation_test'
+        self.Metric_name_bench_pearson = 'pearson_correlation_bench'
+        self.Metric_name_bench_spearman = 'spearman_correlation_bench'
 
         with tf.summary.create_file_writer(self.log_dir + '/hp_tunning').as_default():
             hp.hparams_config(
@@ -110,7 +110,7 @@ class SpCas9_tensorboard:
         # Model
         self.model = CNNLSTM_SpCas9(
             HP= HP_dict,
-            random_seed = 1234
+            random_seed = random_seed
         )
 
         self.data = self.model.SpCas9_data
@@ -118,17 +118,6 @@ class SpCas9_tensorboard:
 
 
         # Callbacks
-        '''
-        graph_data = {'input' : self.data['test']['seq'], 'True' : self.data['test']['indel_rate']}
-        self.callbacks = HP_tunning_tensorboard_callback(
-            log_dir=self.log_dir,
-            model=self.model.CNNLSTM_regression_model,
-            data=graph_data,
-            plot=plot_scatter,
-            plot_name='scatter'
-        )
-        '''
-
         test_input = self.data['test']['seq']
         test_indel_true = self.data['test']['indel_rate']
         bench_input = self.bench_data['total']['seq']
