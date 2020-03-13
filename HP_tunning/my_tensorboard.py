@@ -35,13 +35,14 @@ default_HP = {
 class HP_tunning_tensorboard_callback:
     def __init__(self, log_dir):
         self.log_dir = log_dir
+        self.histogram_freq = 10
 
         # tensorboard plot image log dir
-        self.file_writer_plot = tf.summary.create_file_writer(self.log_dir + '/train')
+        self.file_writer_plot = tf.summary.create_file_writer(self.log_dir + '/validation')
 
 
     def TB_callbacks(self, plot_callbacks=[]):
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=self.log_dir, histogram_freq=1)#, profile_batch=0)
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=self.log_dir, histogram_freq=self.histogram_freq)#, profile_batch=0)
         
         if type(plot_callbacks) is not list:
             plot_callbacks = [plot_callbacks]
@@ -78,16 +79,17 @@ class HP_tunning_tensorboard_callback:
         return image
 
     def log_regression_plot(self, epoch, logs, model, input_data, true_data, plot, plot_name='Test scatter'):
-        prediction = model.predict(input_data)
-        #if prediction.shape[1] >= 2:
-        #    prediction = np.argmax(prediction, axis=1)
-        #else:
-        #    prediction = prediction.reshape(-1,)
-        prediction = prediction.reshape(-1,)
+        if epoch%self.histogram_freq == 0:
+            prediction = model.predict(input_data)
+            #if prediction.shape[1] >= 2:
+            #    prediction = np.argmax(prediction, axis=1)
+            #else:
+            #    prediction = prediction.reshape(-1,)
+            prediction = prediction.reshape(-1,)
 
-        figure = plot(prediction_data=prediction, true_data=true_data, plot_name=plot_name)
-        fig_image = self.plot_to_image(figure)
-        
-        with self.file_writer_plot.as_default():
-            tf.summary.image(plot_name, fig_image, step=epoch)
-        #return fig_image
+            figure = plot(prediction_data=prediction, true_data=true_data, plot_name=plot_name)
+            fig_image = self.plot_to_image(figure)
+            
+            with self.file_writer_plot.as_default():
+                tf.summary.image(plot_name, fig_image, step=epoch)
+            #return fig_image
