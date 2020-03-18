@@ -45,20 +45,20 @@ HP_tunning_scale = {
 }
 
 
-HP_tunning_short_scale = {
-    'CNN_1_kernal' : 5,
-    'CNN_1_RNN' : 4,
-    'CNN_2_kernal' : 0,
-    'CNN_2_RNN' : 1,
-    #'CNN_3_kernal' : 5,
-    #'CNN_3_RNN' : 1,
+HP_tunning_3_layer_scale = {
+    'CNN_1_kernal' : 1,
+    'CNN_1_RNN' : 3,
+    'CNN_2_kernal' : 1,
+    'CNN_2_RNN' : 4,
+    'CNN_3_kernal' : 2,
+    'CNN_3_RNN' : 5,
     #'CNN_4_kernal' : 3,
     #'CNN_4_RNN' : 5,
     #'CNN_5_kernal' : 1,
     #'CNN_5_RNN' : 5,
 
     'DNN_1' : 9,
-    'DNN_2' : 2,
+    'DNN_2' : 9,
     'DNN_rate' : 9,
 
     'CNN_dropout' : 0.5,

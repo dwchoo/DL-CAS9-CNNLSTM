@@ -3,6 +3,7 @@ import numpy as np
 
 from data_import_preprocessing import import_data_preprocessing
 from model_define import *
+from variable_init import *
 
 
 from scipy.stats import pearsonr, spearmanr
@@ -446,21 +447,23 @@ class CNNLSTM_short_SpCas9:
 
 
 
+
+
 class SpCas9_MODEL:
     def __init__(self, HP = default_HP, random_seed = 1234):
 
         # init
-        self.__HP = HP
-        self.__random_seed = random_seed
+        self._HP = HP
+        self._random_seed = random_seed
         self.epochs = 200
 
         # data
         self.Data()
         
 
-        self.model = self.model_define(input_shape=self.input_shape, HP = self.__HP)
-        self.__model = self.model()
-        self.__model_regression = self.model.regression_model
+        self.model = self.model_define(input_shape=self.input_shape, HP = self._HP)
+        self._model = self.model()
+        self._model_regression = self.model.regression_model
 
 
 
@@ -474,7 +477,7 @@ class SpCas9_MODEL:
         # SpCas9 data
         SpCas9_data_preprocessing = import_data_preprocessing(train_data_file_name=self.train_data_name,
                                                                test_data_file_name=self.test_data_name,
-                                                               RD_seed=self.__random_seed
+                                                               RD_seed=self._random_seed
                                                                )
         self.SpCas9_data = SpCas9_data_preprocessing(sgRNA_column='Target context sequence',
                                                         indel_column='Background subtracted indel',
@@ -482,7 +485,7 @@ class SpCas9_MODEL:
         
         # Benchmark data
         Endo_data_preprocessing = import_data_preprocessing(train_data_file_name=self.benchmark_data,
-                                                            RD_seed=self.__random_seed
+                                                            RD_seed=self._random_seed
                                                             )
         self.bench_data_endo = Endo_data_preprocessing(sgRNA_column='30 bp target sequence (4 bp + 20 bp Protospacer + PAM + 3 bp)',
                                                         indel_column='Averge indel frequency (%)',
@@ -539,7 +542,7 @@ class SpCas9_MODEL:
 
         callbacks = [early_stopping] + callback
 
-        self.__model.fit(x=self.X_train,
+        self._model.fit(x=self.X_train,
                         y={
                             #'num_mis': num_mis_train,
                             'class_1': self.class_train,
@@ -565,7 +568,7 @@ class SpCas9_MODEL:
 
     def model_evaluate(self,verbose=0):
         # model result
-        class_result_acc = self.__model.evaluate(self.X_test,
+        class_result_acc = self._model.evaluate(self.X_test,
                                                {
                                                    #'num_mis': num_mis_test,
                                                    'class_1': self.class_test,
@@ -578,13 +581,17 @@ class SpCas9_MODEL:
 
         #print(MTL_model.metrics_names)
         #print(class_result_acc)
-        result_label = self.__model.metrics_names
+        result_label = self._model.metrics_names
         
+        # result variable
+        self.results = model_results()
+
         # loss
         label_index_loss = result_label.index('loss')
         label_index_rate_loss = result_label.index('rate_loss')
-        total_loss = class_result_acc[label_index_loss]
-        rate_loss = class_result_acc[label_index_rate_loss]
+        self.results.test_total_loss = class_result_acc[label_index_loss]
+        self.results.test_rate_loss  = class_result_acc[label_index_rate_loss]
+
 
         # display evaluate
         if verbose == 1:
@@ -592,24 +599,27 @@ class SpCas9_MODEL:
                 print('{:16} : {:>6.4f}'.format(label,result))
         
         # Correlation
-        self.test_data_pearson, self.test_data_spearman = self.calc_correlation(
-            model=self.__model_regression,
+        test_data_pearson, test_data_spearman = self.calc_correlation(
+            model=self._model_regression,
             input_data=self.X_test,
             true_data=self.rate_test,
             verbose=0
         )
-        self.bench_data_pearson, self.bench_data_spearman = self.calc_correlation(
-            model=self.__model_regression,
+        bench_data_pearson, bench_data_spearman = self.calc_correlation(
+            model=self._model_regression,
             input_data=self.X_bench_endo,
             true_data=self.rate_bench_endo,
             verbose=0
         )
 
-        return {
-            'total_loss' : total_loss, 'test_rate_loss' : rate_loss,
-            'test_data_pearson' : self.test_data_pearson, 'test_data_spearman' : self.test_data_spearman,
-            'bench_data_pearson' : self.bench_data_pearson, 'bench_data_spearman' : self.bench_data_spearman
-            }
+        self.results.correlation_init(
+            test_pearson    = test_data_pearson,
+            test_spearman   = test_data_spearman,
+            bench_pearson   = bench_data_pearson,
+            bench_spearman  = bench_data_spearman,
+            )
+
+        return self.results
 
 
 
@@ -639,51 +649,10 @@ class SpCas9_MODEL:
             print('Spearman Correlation : {}'.format(spearman_corr_value))
         return pearson_corr_value, spearman_corr_value
 
+
     def model_regression(self):
-        return self.__model_regression
+        return self._model_regression
 
-    '''
-    def plot_scatter(self, prediction_data, true_data, plot_name='Test'):
-        figure = plt.figure(figsize=(8,8))
-        plt.title(plot_name, fontsize=20)
-        plt.ylabel('Prediction', fontsize=15)
-        plt.xlabel('True', fontsize=15)
-        plt.scatter(x=true_data, y=prediction_data)
-        plt.xlim(0,1)
-        plt.ylim(0,1)
-        plt.grid(True)
-
-        return figure
-    
-    def plot_to_image(self, figure):
-        """Converts the matplotlib plot specified by 'figure' to a PNG image and
-        returns it. The supplied figure is closed and inaccessible after this call."""
-        # Save the plot to a PNG in memory.
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        # Closing the figure prevents it from being displayed directly inside
-        # the notebook.
-        plt.close(figure)
-        buf.seek(0)
-        # Convert PNG buffer to TF image
-        image = tf.image.decode_png(buf.getvalue(), channels=4)
-        # Add the batch dimension
-        image = tf.expand_dims(image, 0)
-        return image
-
-    def log_plot(self, epoch, model, input_data, true_data, plot, plot_name='Test scatter'):
-        prediction = model.predict(input_data)
-        if prediction.shape[1] >= 2:
-            prediction = np.argmax(prediction, axis=1)
-        else:
-            prediction = prediction.reshape(-1,)
-
-        figure = plot(prediction_data=prediction, true_data=true_data, plot_name=plot_name)
-        fig_image = self.plot_to_image(figure)
-        return fig_image
-        #with self.file_writer_plot.as_default():
-        #    tf.summary.image(plot_name, fig_image, step=epoch)
-    '''
 
 
 
@@ -717,3 +686,109 @@ class CNNLSTM_3_layer_SpCas9(SpCas9_MODEL):
 
     def calc_correlation(self, model, input_data, true_data, verbose=0):
         return super().calc_correlation(model, input_data, true_data, verbose=verbose)
+
+
+class CNNLSTM_regression_3_layer_SpCas9(SpCas9_MODEL):
+    def __init__(self, HP=default_HP, random_seed=1234):
+        super().__init__(HP=HP, random_seed=random_seed)
+
+    def Data(self):
+        return super().Data()
+
+    def model_define(self, input_shape, HP):
+        class model:
+            def __init__(self, input_shape, HP):
+                self.model = CNNLSTM_regression_3_layer_model(input_shape=input_shape, HP = HP)
+                self.regression_train_model = self.model.regression_train_model()
+                self.regression_model = self.model.regression_model()
+
+            def __call__(self):
+                return self.regression_train_model
+        # Model
+        _model = model(input_shape=input_shape, HP = HP)
+
+        return _model
+
+
+    def model_train(self, callback=[], verbose=1):
+
+        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_rate_loss',
+                                                        min_delta=0.0001,
+                                                        patience=10, verbose=0, mode='min')
+
+        callbacks = [early_stopping] + callback
+
+        self._model.fit(x=self.X_train,
+                        y={
+                            #'num_mis': num_mis_train,
+                            'rate_1': self.rate_train,
+                            'rate_2': self.rate_train,
+                            'rate': self.rate_train},
+                        validation_data=(self.X_val, {#'num_mis': num_mis_val,
+                                                'rate_1': self.rate_val,
+                                                'rate_2': self.rate_val,
+                                                'rate': self.rate_val}),
+                        shuffle=True,
+                        epochs=self.epochs,
+                        batch_size=64,
+                        verbose=verbose,
+                        callbacks=callbacks)
+
+
+    def model_evaluate(self,verbose=0):
+        # model result
+        class_result_acc = self._model.evaluate(self.X_test,
+                                               {
+                                                   #'num_mis': num_mis_test,
+                                                   'rate_1': self.rate_test,
+                                                   'rate_2': self.rate_test,
+                                                   'rate': self.rate_test},
+                                               verbose=0
+                                                )
+
+
+        #print(MTL_model.metrics_names)
+        #print(class_result_acc)
+        result_label = self._model.metrics_names
+        
+        # result variable
+        self.results = model_results()
+
+        # loss
+        label_index_loss = result_label.index('loss')
+        label_index_rate_loss = result_label.index('rate_loss')
+        self.results.test_total_loss = class_result_acc[label_index_loss]
+        self.results.test_rate_loss  = class_result_acc[label_index_rate_loss]
+
+
+        # display evaluate
+        if verbose == 1:
+            for label, result in zip(result_label, class_result_acc):
+                print('{:16} : {:>6.4f}'.format(label,result))
+        
+        # Correlation
+        test_data_pearson, test_data_spearman = self.calc_correlation(
+            model=self._model_regression,
+            input_data=self.X_test,
+            true_data=self.rate_test,
+            verbose=0
+        )
+        bench_data_pearson, bench_data_spearman = self.calc_correlation(
+            model=self._model_regression,
+            input_data=self.X_bench_endo,
+            true_data=self.rate_bench_endo,
+            verbose=0
+        )
+
+        self.results.correlation_init(
+            test_pearson    = test_data_pearson,
+            test_spearman   = test_data_spearman,
+            bench_pearson   = bench_data_pearson,
+            bench_spearman  = bench_data_spearman,
+            )
+
+        return self.results
+
+    
+    def model_regression(self):
+        return super().model_regression()

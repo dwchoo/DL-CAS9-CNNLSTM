@@ -39,7 +39,7 @@ default_HP = {
 class CNNLSTM_model:
     def __init__(self, input_shape, HP = default_HP):
         self.input_data = Input(shape=input_shape)
-        self.__HP = HP
+        self._HP = HP
 
 
         self.HP_define()
@@ -48,22 +48,22 @@ class CNNLSTM_model:
 
 
     def HP_define(self):
-        self.CNN_1_kernal = self.__HP['CNN_1_kernal']
-        self.CNN_1_RNN    = self.__HP['CNN_1_RNN']
-        self.CNN_2_kernal = self.__HP['CNN_2_kernal']
-        self.CNN_2_RNN    = self.__HP['CNN_2_RNN']
-        self.CNN_3_kernal = self.__HP['CNN_3_kernal']
-        self.CNN_3_RNN    = self.__HP['CNN_3_RNN']
-        self.CNN_4_kernal = self.__HP['CNN_4_kernal']
-        self.CNN_4_RNN    = self.__HP['CNN_4_RNN']
-        self.CNN_5_kernal = self.__HP['CNN_5_kernal']
-        self.CNN_5_RNN    = self.__HP['CNN_5_RNN']
-        self.DNN_1        = self.__HP['DNN_1']
-        self.DNN_2        = self.__HP['DNN_2']
-        self.DNN_rate     = self.__HP['DNN_rate']
-        self.CNN_dropout  = self.__HP['CNN_dropout' ]
-        self.DNN_dropout  = self.__HP['DNN_dropout' ]
-        self.learning_rate  =  self.__HP['learning_rate']
+        self.CNN_1_kernal = self._HP['CNN_1_kernal']
+        self.CNN_1_RNN    = self._HP['CNN_1_RNN']
+        self.CNN_2_kernal = self._HP['CNN_2_kernal']
+        self.CNN_2_RNN    = self._HP['CNN_2_RNN']
+        self.CNN_3_kernal = self._HP['CNN_3_kernal']
+        self.CNN_3_RNN    = self._HP['CNN_3_RNN']
+        self.CNN_4_kernal = self._HP['CNN_4_kernal']
+        self.CNN_4_RNN    = self._HP['CNN_4_RNN']
+        self.CNN_5_kernal = self._HP['CNN_5_kernal']
+        self.CNN_5_RNN    = self._HP['CNN_5_RNN']
+        self.DNN_1        = self._HP['DNN_1']
+        self.DNN_2        = self._HP['DNN_2']
+        self.DNN_rate     = self._HP['DNN_rate']
+        self.CNN_dropout  = self._HP['CNN_dropout' ]
+        self.DNN_dropout  = self._HP['DNN_dropout' ]
+        self.learning_rate  =  self._HP['learning_rate']
 
         
     def model_define(self):
@@ -107,14 +107,14 @@ class CNNLSTM_model:
         self.MTL_classification_layer, self.MTL_regression_layer = \
             self.MTL_layer(self.LSTM_middle_final, layer_name='final')
 
-        self.__MTL_model = Model(self.input_data, [self.classification_layer_1, self.classification_layer_2,
+        self._MTL_model = Model(self.input_data, [self.classification_layer_1, self.classification_layer_2,
                                         self.MTL_classification_layer, self.MTL_regression_layer])
-        self.__classification_model = Model(self.input_data, self.MTL_classification_layer)
-        self.__regression_model = Model(self.input_data, self.MTL_regression_layer)
-        self.__clustering_model = Model(self.input_data, self.LSTM_middle_final)
+        self._classification_model = Model(self.input_data, self.MTL_classification_layer)
+        self._regression_model = Model(self.input_data, self.MTL_regression_layer)
+        self._clustering_model = Model(self.input_data, self.LSTM_middle_final)
 
 
-        return self.__MTL_model
+        return self._MTL_model
 
     def model_compile(self):
         # compile
@@ -138,280 +138,6 @@ class CNNLSTM_model:
                                         'class_2': "accuracy",
                                         'class_final': "accuracy"}
                                     )
-
-
-    def MTL_model(self,):
-        return self.__MTL_model
-
-    def classification_model(self,):
-        return self.__classification_model
-
-    def regression_model(self):
-        return self.__regression_model
-
-    def clustering_model(self):
-        return self.__clustering_model
-
-    def CNNLSTM_layer(self, layer_input, kernal_size = 128, RNN_cell_size = 256, dropout = 0.5):
-        kernal_size = kernal_size
-        RNN_cell_size = RNN_cell_size
-        dropout = dropout
-
-        input_data = layer_input
-
-        CNN_1 = Conv1D(kernal_size, [1], activation='relu', padding='same', kernel_initializer='he_normal')(input_data)
-        CNN_1 = Dropout(dropout)(CNN_1)
-
-        CNN_2 = Conv1D(kernal_size, [2], activation='relu', padding='same', kernel_initializer='he_normal')(input_data)
-        CNN_2 = Dropout(dropout)(CNN_2)
-
-        CNN_3 = Conv1D(kernal_size, [3], activation='relu', padding='same', kernel_initializer='he_normal')(input_data)
-        CNN_3 = Dropout(dropout)(CNN_3)
-
-        CNN_4 = Conv1D(kernal_size, [4], activation='relu', padding='same', kernel_initializer='he_normal')(input_data)
-        CNN_4 = Dropout(dropout)(CNN_4)
-
-        CNN_5 = Conv1D(kernal_size, [5], activation='relu', padding='same', kernel_initializer='he_normal')(input_data)
-        CNN_5 = Dropout(dropout)(CNN_5)
-
-        CNN_concatenate = concatenate([CNN_1, CNN_2, CNN_3, CNN_4, CNN_5])
-
-        LSTM_layer = LSTM(RNN_cell_size, return_sequences=True)(CNN_concatenate)
-        LSTM_layer = Dropout(dropout)(LSTM_layer)
-
-        return LSTM_layer
-
-    def select_last_LSTM_cell(self,LSTM):
-        last_LSTM = Lambda(lambda x: x[:,-1,:])(LSTM)
-        return last_LSTM
-
-    def classification_layer(self, layer_input, layer_name='1'):
-        DNN_1_cell = self.DNN_1
-        DNN_2_cell = self.DNN_2
-        DNN_final_cell = 11
-        dropout = self.DNN_dropout
-
-        input_data = layer_input
-
-        DNN_class_layer_1 = Dense(DNN_1_cell, activation='relu')(input_data)
-        DNN_class_layer_1 = Dropout(dropout)(DNN_class_layer_1)
-
-        DNN_class_layer_2 = Dense(DNN_2_cell, activation='relu')(DNN_class_layer_1)
-        DNN_class_layer_2 = Dropout(dropout)(DNN_class_layer_2)
-
-        DNN_class_layer_3 = Dense(DNN_final_cell,
-                                  activation='softmax',
-                                  name='class_{}'.format(layer_name))(DNN_class_layer_2)
-
-        return DNN_class_layer_3
-
-    def MTL_layer(self, layer_input, layer_name='3'):
-        DNN_class_1_cell = self.DNN_1
-        DNN_class_2_cell = self.DNN_2
-        DNN_class_final_cell = 11
-
-        DNN_rate_1_cell = self.DNN_rate
-        DNN_rate_final_cell = 1
-
-        dropout = self.DNN_dropout
-
-        input_data = layer_input
-
-        DNN_class_layer_1 = Dense(DNN_class_1_cell, activation='relu')(input_data)
-        DNN_class_layer_1 = Dropout(dropout)(DNN_class_layer_1)
-
-        DNN_class_layer_2 = Dense(DNN_class_2_cell, activation='relu')(DNN_class_layer_1)
-        DNN_class_layer_2 = Dropout(dropout)(DNN_class_layer_2)
-
-        DNN_class_layer_3 = Dense(DNN_class_final_cell,
-                                  activation='softmax',
-                                  name='class_{}'.format(layer_name))(DNN_class_layer_2)
-
-        DNN_rate_layer_1 = Dense(DNN_rate_1_cell, activation='relu')(DNN_class_layer_2)
-        DNN_rate_layer_1 = Dropout(dropout)(DNN_rate_layer_1)
-
-        DNN_rate_layer_2 = Dense(DNN_rate_final_cell, activation='linear', name='rate')(DNN_rate_layer_1)
-
-        return DNN_class_layer_3, DNN_rate_layer_2
-
-
-
-
-
-
-class CNNLSTM_3_layer_model(CNNLSTM_model):
-    def __init__(self, input_shape, HP=default_HP):
-        super().__init__(input_shape, HP=HP)
-
-    def HP_define(self):
-        self.CNN_1_kernal = self.__HP['CNN_1_kernal']
-        self.CNN_1_RNN    = self.__HP['CNN_1_RNN']
-        self.CNN_2_kernal = self.__HP['CNN_2_kernal']
-        self.CNN_2_RNN    = self.__HP['CNN_2_RNN']
-        self.CNN_3_kernal = self.__HP['CNN_3_kernal']
-        self.CNN_3_RNN    = self.__HP['CNN_3_RNN']
-        #self.CNN_4_kernal = self.__HP['CNN_4_kernal']
-        #self.CNN_4_RNN    = self.__HP['CNN_4_RNN']
-        #self.CNN_5_kernal = self.__HP['CNN_5_kernal']
-        #self.CNN_5_RNN    = self.__HP['CNN_5_RNN']
-        self.DNN_1        = self.__HP['DNN_1']
-        self.DNN_2        = self.__HP['DNN_2']
-        self.DNN_rate     = self.__HP['DNN_rate']
-        self.CNN_dropout  = self.__HP['CNN_dropout' ]
-        self.DNN_dropout  = self.__HP['DNN_dropout' ]
-        self.learning_rate  =  self.__HP['learning_rate']
-
-    def model_define(self):
-        #model define
-        CNNLSTM_layer_1 = self.CNNLSTM_layer(self.input_data,
-                                            kernal_size=self.CNN_1_kernal,
-                                            RNN_cell_size=self.CNN_1_RNN,
-                                            dropout=self.CNN_dropout)
-        concatenate_1 = concatenate([self.input_data, CNNLSTM_layer_1])
-
-        CNNLSTM_layer_2 = self.CNNLSTM_layer(self.input_data,
-                                            kernal_size=self.CNN_2_kernal,
-                                            RNN_cell_size=self.CNN_2_RNN,
-                                            dropout=self.CNN_dropout)
-        concatenate_2 = concatenate([CNNLSTM_layer_1, CNNLSTM_layer_2])
-
-        CNNLSTM_layer_3 = self.CNNLSTM_layer(self.input_data,
-                                            kernal_size=self.CNN_3_kernal,
-                                            RNN_cell_size=self.CNN_3_RNN,
-                                            dropout=self.CNN_dropout)
-        concatenate_3  = concatenate([CNNLSTM_layer_2, CNNLSTM_layer_3])
-
-        #CNNLSTM_layer_4 = self.CNNLSTM_layer(self.input_data,
-        #                                    kernal_size=self.CNN_4_kernal,
-        #                                    RNN_cell_size=self.CNN_4_RNN,
-        #                                    dropout=self.CNN_dropout)
-        #concatenate_4 = concatenate([CNNLSTM_layer_3, CNNLSTM_layer_4])
-        #
-        #CNNLSTM_layer_5 = self.CNNLSTM_layer(self.input_data,
-        #                                    kernal_size=self.CNN_5_kernal,
-        #                                    RNN_cell_size=self.CNN_5_RNN,
-        #                                    dropout=self.CNN_dropout)
-        #concatenate_5 = concatenate([CNNLSTM_layer_4, CNNLSTM_layer_5])
-
-        LSTM_middle_1 = self.select_last_LSTM_cell(concatenate_1)
-        LSTM_middle_2 = self.select_last_LSTM_cell(concatenate_2)
-        self.LSTM_middle_final = self.select_last_LSTM_cell(concatenate_3)
-
-        self.classification_layer_1 = self.classification_layer(LSTM_middle_1, layer_name='1')
-        self.classification_layer_2 = self.classification_layer(LSTM_middle_2, layer_name='2')
-        self.MTL_classification_layer, self.MTL_regression_layer = \
-            self.MTL_layer(self.LSTM_middle_final, layer_name='final')
-
-        self.__MTL_model = Model(self.input_data, [self.classification_layer_1, self.classification_layer_2,
-                                        self.MTL_classification_layer, self.MTL_regression_layer])
-        self.__classification_model = Model(self.input_data, self.MTL_classification_layer)
-        self.__regression_model = Model(self.input_data, self.MTL_regression_layer)
-        self.__clustering_model = Model(self.input_data, self.LSTM_middle_final)
-
-        return self.__MTL_model
-
-    def MTL_model(self):
-        return super().MTL_model()
-    
-    def regression_model(self):
-        return super().regression_model()
-
-
-
-
-
-
-class CNNLSTM_short_model:
-    def __init__(self, input_shape, HP = default_HP):
-        ## TODO: Hyperparameter 넣는 방법 추가
-        self.input_data = Input(shape=input_shape)
-
-        self.CNN_1_kernal = HP['CNN_1_kernal']
-        self.CNN_1_RNN    = HP['CNN_1_RNN']
-        self.CNN_2_kernal = HP['CNN_2_kernal']
-        self.CNN_2_RNN    = HP['CNN_2_RNN']
-        #self.CNN_3_kernal = HP['CNN_3_kernal']
-        #self.CNN_3_RNN    = HP['CNN_3_RNN']
-        #self.CNN_4_kernal = HP['CNN_4_kernal']
-        #self.CNN_4_RNN    = HP['CNN_4_RNN']
-        #self.CNN_5_kernal = HP['CNN_5_kernal']
-        #self.CNN_5_RNN    = HP['CNN_5_RNN']
-        self.DNN_1        = HP['DNN_1']
-        self.DNN_2        = HP['DNN_2']
-        self.DNN_rate     = HP['DNN_rate']
-        self.CNN_dropout  = HP['CNN_dropout' ]
-        self.DNN_dropout  = HP['DNN_dropout' ]
-        self.learning_rate  =  HP['learning_rate']
-
-        
-        #model define
-        CNNLSTM_layer_1 = self.CNNLSTM_layer(self.input_data,
-                                            kernal_size=self.CNN_1_kernal,
-                                            RNN_cell_size=self.CNN_1_RNN,
-                                            dropout=self.CNN_dropout)
-        concatenate_1 = concatenate([self.input_data, CNNLSTM_layer_1])
-
-        CNNLSTM_layer_2 = self.CNNLSTM_layer(self.input_data,
-                                            kernal_size=self.CNN_2_kernal,
-                                            RNN_cell_size=self.CNN_2_RNN,
-                                            dropout=self.CNN_dropout)
-        concatenate_2 = concatenate([CNNLSTM_layer_1, CNNLSTM_layer_2])
-        '''
-        CNNLSTM_layer_3 = self.CNNLSTM_layer(self.input_data,
-                                            kernal_size=self.CNN_3_kernal,
-                                            RNN_cell_size=self.CNN_3_RNN,
-                                            dropout=self.CNN_dropout)
-        concatenate_3  = concatenate([CNNLSTM_layer_2, CNNLSTM_layer_3])
-
-        CNNLSTM_layer_4 = self.CNNLSTM_layer(self.input_data,
-                                            kernal_size=self.CNN_4_kernal,
-                                            RNN_cell_size=self.CNN_4_RNN,
-                                            dropout=self.CNN_dropout)
-        concatenate_4 = concatenate([CNNLSTM_layer_3, CNNLSTM_layer_4])
-        
-        CNNLSTM_layer_5 = self.CNNLSTM_layer(self.input_data,
-                                            kernal_size=self.CNN_5_kernal,
-                                            RNN_cell_size=self.CNN_5_RNN,
-                                            dropout=self.CNN_dropout)
-        concatenate_5 = concatenate([CNNLSTM_layer_4, CNNLSTM_layer_5])
-        '''
-        LSTM_middle_1 = self.select_last_LSTM_cell(concatenate_1)
-        #LSTM_middle_2 = self.select_last_LSTM_cell(concatenate_2)
-        self.LSTM_middle_final = self.select_last_LSTM_cell(concatenate_2)
-
-        self.classification_layer_1 = self.classification_layer(LSTM_middle_1, layer_name='1')
-        #self.classification_layer_2 = self.classification_layer(LSTM_middle_2, layer_name='2')
-        self.MTL_classification_layer, self.MTL_regression_layer = \
-            self.MTL_layer(self.LSTM_middle_final, layer_name='final')
-
-        self._MTL_model = Model(self.input_data, [self.classification_layer_1, #self.classification_layer_2,
-                                        self.MTL_classification_layer, self.MTL_regression_layer])
-        self._classification_model = Model(self.input_data, self.MTL_classification_layer)
-        self._regression_model = Model(self.input_data, self.MTL_regression_layer)
-        self._clustering_model = Model(self.input_data, self.LSTM_middle_final)
-
-
-        # compile
-        optimizer = Adam(learning_rate = self.learning_rate)
-        self._MTL_model.compile(optimizer=optimizer,
-                                loss={
-                                    #'num_mis': 'categorical_crossentropy',
-                                    'class_1': 'categorical_crossentropy',
-                                    #'class_2': 'categorical_crossentropy',
-                                    'class_final': 'categorical_crossentropy',
-                                    'rate': 'mean_squared_error'},
-                                loss_weights={
-                                    #'num_mis': 0.5,
-                                    'class_1': 1,
-                                    #'class_2': 1,
-                                    'class_final': 0.5,
-                                    'rate': 1},
-                                metrics={
-                                    #'num_mis': 'accuracy',
-                                    'class_1': "accuracy",
-                                    #'class_2': "accuracy",
-                                    'class_final': "accuracy"}
-                                )
 
 
     def MTL_model(self,):
@@ -507,6 +233,214 @@ class CNNLSTM_short_model:
         DNN_rate_layer_2 = Dense(DNN_rate_final_cell, activation='linear', name='rate')(DNN_rate_layer_1)
 
         return DNN_class_layer_3, DNN_rate_layer_2
+
+
+
+
+
+
+
+
+class CNNLSTM_3_layer_model(CNNLSTM_model):
+    def __init__(self, input_shape, HP=default_HP):
+        super().__init__(input_shape, HP=HP)
+
+    def HP_define(self):
+        self.CNN_1_kernal = self._HP['CNN_1_kernal']
+        self.CNN_1_RNN    = self._HP['CNN_1_RNN']
+        self.CNN_2_kernal = self._HP['CNN_2_kernal']
+        self.CNN_2_RNN    = self._HP['CNN_2_RNN']
+        self.CNN_3_kernal = self._HP['CNN_3_kernal']
+        self.CNN_3_RNN    = self._HP['CNN_3_RNN']
+        #self.CNN_4_kernal = self._HP['CNN_4_kernal']
+        #self.CNN_4_RNN    = self._HP['CNN_4_RNN']
+        #self.CNN_5_kernal = self._HP['CNN_5_kernal']
+        #self.CNN_5_RNN    = self._HP['CNN_5_RNN']
+        self.DNN_1        = self._HP['DNN_1']
+        self.DNN_2        = self._HP['DNN_2']
+        self.DNN_rate     = self._HP['DNN_rate']
+        self.CNN_dropout  = self._HP['CNN_dropout' ]
+        self.DNN_dropout  = self._HP['DNN_dropout' ]
+        self.learning_rate  =  self._HP['learning_rate']
+
+    def model_define(self):
+        #model define
+        CNNLSTM_layer_1 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_1_kernal,
+                                            RNN_cell_size=self.CNN_1_RNN,
+                                            dropout=self.CNN_dropout)
+        concatenate_1 = concatenate([self.input_data, CNNLSTM_layer_1])
+
+        CNNLSTM_layer_2 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_2_kernal,
+                                            RNN_cell_size=self.CNN_2_RNN,
+                                            dropout=self.CNN_dropout)
+        concatenate_2 = concatenate([CNNLSTM_layer_1, CNNLSTM_layer_2])
+
+        CNNLSTM_layer_3 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_3_kernal,
+                                            RNN_cell_size=self.CNN_3_RNN,
+                                            dropout=self.CNN_dropout)
+        concatenate_3  = concatenate([CNNLSTM_layer_2, CNNLSTM_layer_3])
+
+        #CNNLSTM_layer_4 = self.CNNLSTM_layer(self.input_data,
+        #                                    kernal_size=self.CNN_4_kernal,
+        #                                    RNN_cell_size=self.CNN_4_RNN,
+        #                                    dropout=self.CNN_dropout)
+        #concatenate_4 = concatenate([CNNLSTM_layer_3, CNNLSTM_layer_4])
+        #
+        #CNNLSTM_layer_5 = self.CNNLSTM_layer(self.input_data,
+        #                                    kernal_size=self.CNN_5_kernal,
+        #                                    RNN_cell_size=self.CNN_5_RNN,
+        #                                    dropout=self.CNN_dropout)
+        #concatenate_5 = concatenate([CNNLSTM_layer_4, CNNLSTM_layer_5])
+
+        LSTM_middle_1 = self.select_last_LSTM_cell(concatenate_1)
+        LSTM_middle_2 = self.select_last_LSTM_cell(concatenate_2)
+        self.LSTM_middle_final = self.select_last_LSTM_cell(concatenate_3)
+
+        self.classification_layer_1 = self.classification_layer(LSTM_middle_1, layer_name='1')
+        self.classification_layer_2 = self.classification_layer(LSTM_middle_2, layer_name='2')
+        self.MTL_classification_layer, self.MTL_regression_layer = \
+            self.MTL_layer(self.LSTM_middle_final, layer_name='final')
+
+        self._MTL_model = Model(self.input_data, [self.classification_layer_1, self.classification_layer_2,
+                                        self.MTL_classification_layer, self.MTL_regression_layer])
+        self._classification_model = Model(self.input_data, self.MTL_classification_layer)
+        self._regression_model = Model(self.input_data, self.MTL_regression_layer)
+        self._clustering_model = Model(self.input_data, self.LSTM_middle_final)
+
+        return self._MTL_model
+
+    def MTL_model(self):
+        return super().MTL_model()
+    
+    def regression_model(self):
+        return super().regression_model()
+
+
+
+
+class CNNLSTM_regression_3_layer_model(CNNLSTM_model):
+    def __init__(self, input_shape, HP=default_HP):
+        super().__init__(input_shape, HP=HP)
+
+    def HP_define(self):
+        self.CNN_1_kernal = self._HP['CNN_1_kernal']
+        self.CNN_1_RNN    = self._HP['CNN_1_RNN']
+        self.CNN_2_kernal = self._HP['CNN_2_kernal']
+        self.CNN_2_RNN    = self._HP['CNN_2_RNN']
+        self.CNN_3_kernal = self._HP['CNN_3_kernal']
+        self.CNN_3_RNN    = self._HP['CNN_3_RNN']
+        #self.CNN_4_kernal = self._HP['CNN_4_kernal']
+        #self.CNN_4_RNN    = self._HP['CNN_4_RNN']
+        #self.CNN_5_kernal = self._HP['CNN_5_kernal']
+        #self.CNN_5_RNN    = self._HP['CNN_5_RNN']
+        self.DNN_1        = self._HP['DNN_1']
+        self.DNN_2        = self._HP['DNN_2']
+        self.DNN_rate     = self._HP['DNN_rate']
+        self.CNN_dropout  = self._HP['CNN_dropout' ]
+        self.DNN_dropout  = self._HP['DNN_dropout' ]
+        self.learning_rate  =  self._HP['learning_rate']
+
+    def model_define(self):
+        #model define
+        CNNLSTM_layer_1 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_1_kernal,
+                                            RNN_cell_size=self.CNN_1_RNN,
+                                            dropout=self.CNN_dropout)
+        concatenate_1 = concatenate([self.input_data, CNNLSTM_layer_1])
+
+        CNNLSTM_layer_2 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_2_kernal,
+                                            RNN_cell_size=self.CNN_2_RNN,
+                                            dropout=self.CNN_dropout)
+        concatenate_2 = concatenate([CNNLSTM_layer_1, CNNLSTM_layer_2])
+
+        CNNLSTM_layer_3 = self.CNNLSTM_layer(self.input_data,
+                                            kernal_size=self.CNN_3_kernal,
+                                            RNN_cell_size=self.CNN_3_RNN,
+                                            dropout=self.CNN_dropout)
+        concatenate_3  = concatenate([CNNLSTM_layer_2, CNNLSTM_layer_3])
+
+        #CNNLSTM_layer_4 = self.CNNLSTM_layer(self.input_data,
+        #                                    kernal_size=self.CNN_4_kernal,
+        #                                    RNN_cell_size=self.CNN_4_RNN,
+        #                                    dropout=self.CNN_dropout)
+        #concatenate_4 = concatenate([CNNLSTM_layer_3, CNNLSTM_layer_4])
+        #
+        #CNNLSTM_layer_5 = self.CNNLSTM_layer(self.input_data,
+        #                                    kernal_size=self.CNN_5_kernal,
+        #                                    RNN_cell_size=self.CNN_5_RNN,
+        #                                    dropout=self.CNN_dropout)
+        #concatenate_5 = concatenate([CNNLSTM_layer_4, CNNLSTM_layer_5])
+
+        LSTM_middle_1 = self.select_last_LSTM_cell(concatenate_1)
+        LSTM_middle_2 = self.select_last_LSTM_cell(concatenate_2)
+        self.LSTM_middle_final = self.select_last_LSTM_cell(concatenate_3)
+
+        self.regression_layer_1 = self.regression_layer(LSTM_middle_1, layer_name='1')
+        self.regression_layer_2 = self.regression_layer(LSTM_middle_2, layer_name='2')
+        self.final_regression_layer = self.regression_layer(self.LSTM_middle_final, layer_name=None)
+
+        self._regression_train_model = Model(self.input_data, [self.regression_layer_1, self.regression_layer_2, self.final_regression_layer])
+        self._regression_model = Model(self.input_data, self.final_regression_layer)
+
+        self._clustering_model = Model(self.input_data, self.LSTM_middle_final)
+
+        return self._regression_train_model
+
+
+    def model_compile(self):
+        # compile
+        optimizer = Adam(learning_rate = self.learning_rate)
+        self.training_model.compile(optimizer=optimizer,
+                                    loss={
+                                        #'num_mis': 'categorical_crossentropy',
+                                        'rate_1': 'mean_squared_error',
+                                        'rate_2': 'mean_squared_error',
+                                        'rate': 'mean_squared_error'},
+                                    loss_weights={
+                                        #'num_mis': 0.5,
+                                        'rate_1': 1,
+                                        'rate_2': 1,
+                                        'rate': 1},
+            )
+
+
+    def regression_layer(self, layer_input, layer_name='3'):
+        
+        if layer_name is None:
+            final_layer_named = 'rate'
+        else:
+            final_layer_named = 'rate_{}'.format(layer_name)
+
+
+        DNN_rate_1_cell = self.DNN_rate
+        DNN_rate_final_cell = 1
+
+        dropout = self.DNN_dropout
+
+        input_data = layer_input
+
+        DNN_rate_layer_1 = Dense(DNN_rate_1_cell, activation='relu')(input_data)
+        DNN_rate_layer_1 = Dropout(dropout)(DNN_rate_layer_1)
+
+        DNN_rate_layer_2 = Dense(DNN_rate_final_cell, activation='linear', name=final_layer_named)(DNN_rate_layer_1)
+
+        return DNN_rate_layer_2
+
+
+    def regression_train_model(self):
+        return self._regression_train_model
+    
+    def regression_model(self):
+        return self._regression_model
+
+
+
+
+
 
 
 
